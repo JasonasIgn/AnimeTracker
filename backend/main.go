@@ -13,26 +13,26 @@ import (
 
 type show struct {
 	Title string
-	Url   string
+	URL   string
 }
 
 func main() {
 
 	//Handling redirections
-	http.HandleFunc("/current-season/", current_season)
-	http.HandleFunc("/current-season/search/", current_season_search)
+	http.HandleFunc("/current-season/", currentSeason)
+	http.HandleFunc("/current-season/search/", currentSeasonSearch)
 
 	log.Println("Listening..")
 	log.Fatal(http.ListenAndServe(":1337", nil))
 }
 
-func current_season(w http.ResponseWriter, r *http.Request) {
-	shows := get_current_season()
+func currentSeason(w http.ResponseWriter, r *http.Request) {
+	shows := getCurrentSeason()
 
-	fmt.Fprintf(w, to_json(shows))
+	fmt.Fprintf(w, toJSON(shows))
 }
 
-func current_season_search(w http.ResponseWriter, r *http.Request) {
+func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
 	key, ok := r.URL.Query()[""]
 
 	if !ok {
@@ -43,53 +43,46 @@ func current_season_search(w http.ResponseWriter, r *http.Request) {
 
 		key := strings.ToLower(key[0])
 
-		shows := get_current_season()
-		shows_after_query := []show{}
+		shows := getCurrentSeason()
+		showsAfterQuery := []show{}
 		for _, show := range shows {
 			title := strings.ToLower(show.Title)
 			if strings.Contains(title, key) {
-				shows_after_query = append(shows_after_query, show)
+				showsAfterQuery = append(showsAfterQuery, show)
 			}
 		}
 
-		fmt.Fprintf(w, to_json(shows_after_query))
+		fmt.Fprintf(w, toJSON(showsAfterQuery))
 
 	}
 }
 
-func get_current_season() []show {
+func getCurrentSeason() []show {
 	shows := []show{}
 
 	c := colly.NewCollector(
 		colly.AllowedDomains("horriblesubs.info"),
 	)
 
+	//For every ind-show html element I parse it's title and href
 	c.OnHTML(".ind-show", func(e *colly.HTMLElement) {
 		temp := show{}
 		temp.Title = e.ChildText("a[title]")
-		temp.Url = e.ChildAttr("a[href]", "href")
-		//		fmt.Printf("FOUND -> %s @ %s\n", temp.Title, temp.ShowURL)
+		temp.URL = e.ChildAttr("a[href]", "href")
 		shows = append(shows, temp)
 	})
 
-	//	c.OnRequest(func(r *colly.Request) {
-	//	fmt.Println("Visiting", r.URL.String())
-	//	})
-
 	c.Visit("https://horriblesubs.info/current-season/")
-	//	for index, show := range shows {
-	//		fmt.Printf("%d. %s @ %s\n", index+1, show.Title, show.URL)
-	//	}
 
 	return shows
 }
 
-func to_json(s []show) string {
-	json_bytes, err := json.Marshal(s)
+func toJSON(s []show) string {
+	jsonBytes, err := json.Marshal(s)
 
 	if err != nil {
 		panic(err)
 	}
 
-	return string(json_bytes)
+	return string(jsonBytes)
 }
