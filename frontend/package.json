@@ -30,6 +30,8 @@
     "resolve": "^1.10.0",
     "resolve-url-loader": "^3.0.0",
     "sass-loader": "^7.1.0",
+    "sharp": "^0.21.3",
+    "sharp-image-webpack-loader": "^1.0.0",
     "webpack": "^4.29.0",
     "webpack-cli": "^3.2.1",
     "webpack-dev-server": "^3.1.14"
