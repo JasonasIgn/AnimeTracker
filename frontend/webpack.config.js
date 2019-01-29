@@ -1,28 +1,25 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
 const chalk = require("chalk");
-const webpack = require("webpack");
 const config = require("./src/config");
 
-console.log(chalk.bold(`\n\nBuild enviroment: ${chalk.green(config.env)}\n`));
+console.log(chalk.bold(`Build enviroment: ${chalk.green(config.env)}`));
 
 const pages = [
   new HtmlWebpackPlugin({
     filename: "index.html",
     template: "./src/index.html",
-    inject: true
-  }),
-  new CopyWebpackPlugin([{ from: "src/resources/static", to: "static" }]),
-  new webpack.DefinePlugin({
-    "process.env.NODE_SURROUNDING": JSON.stringify(process.env.NODE_SURROUNDING)
+    inject: true,
+    chunks: ["index"]
   })
 ];
 
 module.exports = {
   mode: config.isDev ? "development" : "production",
 
-  entry: "./src/index.jsx",
+  entry: {
+    index: "./src/index.jsx"
+  },
 
   output: {
     filename: "[name].[hash].js",
@@ -36,6 +33,15 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.jsx?$/,
+        exclude: /(webpack-dev-server|node_modules)/,
+        use: [
+          {
+            loader: "babel-loader"
+          }
+        ]
+      },
+      {
         test: /\.(png|jpe?g)$/,
         exclude: /\/fonts\//,
         use: [
@@ -46,8 +52,9 @@ module.exports = {
             }
           },
           {
-            loader: "sharp-image-loader",
+            loader: "sharp-image-webpack-loader",
             options: {
+              cache: false,
               withMetadata: true,
               jpegQuality: 80,
               jpegProgressive: true,
@@ -130,8 +137,19 @@ module.exports = {
           {
             loader: "css-loader",
             options: {
-              minimize: !config.isDev,
               sourceMap: config.isDev
+            }
+          },
+          {
+            loader: "postcss-loader",
+            options: {
+              sourceMap: config.isDev,
+              ident: "postcss",
+              plugins: loader => [
+                require("postcss-import")({ root: loader.resourcePath }),
+                require("postcss-preset-env")(),
+                require("cssnano")()
+              ]
             }
           },
           {
@@ -142,15 +160,6 @@ module.exports = {
             options: {
               sourceMap: true
             }
-          }
-        ]
-      },
-      {
-        test: /\.jsx?$/,
-        exclude: /(webpack-dev-server|node_modules)/,
-        use: [
-          {
-            loader: "babel-loader"
           }
         ]
       },
@@ -172,19 +181,18 @@ module.exports = {
     ]
   },
 
+  resolve: {
+    extensions: [".mjs", ".web.js", ".js", ".json", ".web.jsx", ".jsx"]
+  },
+
   devServer: {
-    host: process.env.HOST || "localhost",
-    port: process.env.PORT || 3000,
-    publicPath: "/",
-    historyApiFallback: true,
+    host: "localhost",
+    port: 3000,
     compress: true,
+    historyApiFallback: false,
     hot: false,
     https: false,
     noInfo: false
-  },
-
-  resolve: {
-    extensions: [".mjs", ".web.js", ".js", ".json", ".web.jsx", ".jsx"]
   },
 
   plugins: [...pages]
