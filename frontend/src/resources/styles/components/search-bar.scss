@@ -9,6 +9,27 @@
     border-radius: 5px;
     outline: none;
     box-sizing: border-box;
-    border: none;
+    border: 1px solid grey;
+    &.active {
+      border-bottom: none;
+      border-bottom-left-radius: 0px;
+      border-bottom-right-radius: 0px;
+    }
+  }
+  .suggestions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid grey;
+    border-top: none;
+    background-color: white;
+    li {
+      border-top: 1px solid lightgrey;
+      cursor: pointer;
+      padding: 5px 16px;
+      &:hover {
+        background-color: lightgray;
+      }
+    }
   }
 }
