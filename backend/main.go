@@ -7,13 +7,16 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly"
 )
 
-type show struct {
-	Title string
-	URL   string
+type Show struct {
+	Title       string
+	URL         string
+	Cover       string
+	Description string
 }
 
 func main() {
@@ -44,7 +47,7 @@ func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
 		key := strings.ToLower(key[0])
 
 		shows := getCurrentSeason()
-		showsAfterQuery := []show{}
+		showsAfterQuery := []Show{}
 		for _, show := range shows {
 			title := strings.ToLower(show.Title)
 			if strings.Contains(title, key) {
@@ -57,27 +60,62 @@ func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getCurrentSeason() []show {
-	shows := []show{}
+func getCurrentSeason() []Show {
+	ch := make(chan Show)
 
-	c := colly.NewCollector(
-		colly.AllowedDomains("horriblesubs.info"),
-	)
+	go func() {
 
-	//For every ind-show html element I parse it's title and href
-	c.OnHTML(".ind-show", func(e *colly.HTMLElement) {
-		temp := show{}
-		temp.Title = e.ChildText("a[title]")
-		temp.URL = e.ChildAttr("a[href]", "href")
-		shows = append(shows, temp)
-	})
+		const mainSite = "https://horriblesubs.info"
 
-	c.Visit("https://horriblesubs.info/current-season/")
+		c := colly.NewCollector(
+			colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0"),
+			colly.AllowedDomains("horriblesubs.info"),
+			colly.Async(true),
+		)
+
+		c.Limit(&colly.LimitRule{
+			DomainGlob:  ".*horriblesubs.*",
+			Parallelism: 1,
+			Delay:       1 * time.Second,
+		})
+
+		detailCollector := c.Clone()
+
+		//For every ind-show html element I parse it's title and href
+		c.OnHTML(".ind-show", func(e *colly.HTMLElement) {
+			showUrl := e.ChildAttr("a[href]", "href")
+			detailCollector.Visit(mainSite + showUrl)
+
+		})
+
+		detailCollector.OnHTML(".site-content", func(e *colly.HTMLElement) {
+
+			title := e.ChildText(".entry-title")
+			url := e.Request.URL.String()
+			cover := e.ChildAttr("div.series-image img[src^='']", "src")
+			description := e.ChildText(".series-desc")[16:]
+			ch <- Show{Title: title, URL: url, Cover: cover, Description: description}
+			time.Sleep(time.Second * 1)
+		})
+
+		c.Visit("https://horriblesubs.info/current-season/")
+		c.Wait()
+		close(ch)
+
+	}()
+
+	shows := []Show{}
+
+	for show := range ch {
+		fmt.Println(show.Title)
+		shows = append(shows, show)
+
+	}
 
 	return shows
 }
 
-func toJSON(s []show) string {
+func toJSON(s []Show) string {
 	jsonBytes, err := json.Marshal(s)
 
 	if err != nil {
