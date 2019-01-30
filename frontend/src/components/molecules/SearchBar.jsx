@@ -1,4 +1,5 @@
 import React from "react";
+import config from "../../config";
 
 export const SearchBar = ({ suggestions, onChange }) => (
   <div className="search-bar">
@@ -16,8 +17,8 @@ export const SearchBar = ({ suggestions, onChange }) => (
       }`}
     >
       {suggestions.map((element, index) => {
-        console.log(element);
-        return <li key={index}>{element}</li>;
+        if (index < config.utils.maxSuggestionsInList)
+          return <li key={index}>{element}</li>;
       })}
     </ul>
   </div>

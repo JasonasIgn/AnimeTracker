@@ -5,7 +5,10 @@ const config = {
     env: process.env.NODE_ENV || "development",
     isDev: process.env.NODE_ENV !== "production",
     isBrowser: typeof window !== "undefined",
-    apiUrl: ""
+    apiUrl: "",
+    utils: {
+      maxSuggestionsInList: 6
+    }
   },
   test: {},
   development: {},
