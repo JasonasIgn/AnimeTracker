@@ -6,8 +6,7 @@ export class LandingPage extends Component {
     super(props);
     this.state = {
       fullList: ["asda", "aaaaa", "bbbbb", "cccc", "dddd", "kkkkk"],
-      filteredList: [],
-      searchQuery: ""
+      filteredList: []
     };
   }
 

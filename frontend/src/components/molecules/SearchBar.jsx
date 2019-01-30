@@ -5,12 +5,16 @@ export const SearchBar = ({ suggestions, onChange }) => (
     <input
       type="text"
       placeholder="search"
-      className={`${suggestions ? "active" : ""}`}
+      className={`${suggestions.length > 0 ? "active" : ""}`}
       onChange={e => {
         onChange(e.target.value);
       }}
     />
-    <ul className={"suggestions-list"}>
+    <ul
+      className={`suggestions-list ${
+        suggestions.length === 0 ? "disabled" : ""
+      }`}
+    >
       {suggestions.map((element, index) => {
         console.log(element);
         return <li key={index}>{element}</li>;

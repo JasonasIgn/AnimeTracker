@@ -23,6 +23,9 @@
     border: 1px solid grey;
     border-top: none;
     background-color: white;
+    &.disabled {
+      display: none;
+    }
     li {
       border-top: 1px solid lightgrey;
       cursor: pointer;
