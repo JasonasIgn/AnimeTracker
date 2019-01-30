@@ -1,0 +1,14 @@
+.search-bar {
+  width: 360px;
+  min-width: 320px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  input {
+    padding: 11px 18px;
+    width: 100%;
+    border-radius: 5px;
+    outline: none;
+    box-sizing: border-box;
+    border: none;
+  }
+}
