@@ -14,6 +14,5 @@ const config = {
   development: {},
   production: {}
 };
-console.log(process.env.NODE_ENV);
 
 module.exports = merge(config.all, config[config.all.env]);
