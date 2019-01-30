@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gocolly/colly"
 )
@@ -30,9 +29,17 @@ func main() {
 }
 
 func currentSeason(w http.ResponseWriter, r *http.Request) {
-	shows := getCurrentSeason()
+	showURLS := getCurrentSeasonUrls()
+	shows := currentSeasonDetails(showURLS)
+	shows2 := []Show{}
 
-	fmt.Fprintf(w, toJSON(shows))
+	for show := range shows {
+		fmt.Println(show.Title)
+		shows2 = append(shows2, show)
+
+	}
+
+	fmt.Fprintf(w, toJSON(shows2))
 }
 
 func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
@@ -46,9 +53,10 @@ func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
 
 		key := strings.ToLower(key[0])
 
-		shows := getCurrentSeason()
+		showURLS := getCurrentSeasonUrls()
+		shows := currentSeasonDetails(showURLS)
 		showsAfterQuery := []Show{}
-		for _, show := range shows {
+		for show := range shows {
 			title := strings.ToLower(show.Title)
 			if strings.Contains(title, key) {
 				showsAfterQuery = append(showsAfterQuery, show)
@@ -60,57 +68,64 @@ func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getCurrentSeason() []Show {
-	ch := make(chan Show)
+func getCurrentSeasonUrls() chan string {
+	ch := make(chan string)
 
 	go func() {
-
 		const mainSite = "https://horriblesubs.info"
 
 		c := colly.NewCollector(
-			colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0"),
 			colly.AllowedDomains("horriblesubs.info"),
+			colly.AllowURLRevisit(),
 			colly.Async(true),
 		)
-
-		c.Limit(&colly.LimitRule{
-			DomainGlob:  ".*horriblesubs.*",
-			Parallelism: 1,
-			Delay:       1 * time.Second,
-		})
-
-		detailCollector := c.Clone()
 
 		//For every ind-show html element I parse it's title and href
 		c.OnHTML(".ind-show", func(e *colly.HTMLElement) {
 			showUrl := e.ChildAttr("a[href]", "href")
-			detailCollector.Visit(mainSite + showUrl)
-
+			ch <- mainSite + showUrl
 		})
 
-		detailCollector.OnHTML(".site-content", func(e *colly.HTMLElement) {
+		c.OnRequest(func(r *colly.Request) {
+			fmt.Println("Visiting", r.URL.String())
+		})
 
-			title := e.ChildText(".entry-title")
-			url := e.Request.URL.String()
-			cover := e.ChildAttr("div.series-image img[src^='']", "src")
-			description := e.ChildText(".series-desc")[16:]
-			ch <- Show{Title: title, URL: url, Cover: cover, Description: description}
-			time.Sleep(time.Second * 1)
+		c.OnScraped(func(response *colly.Response) {
+			fmt.Println("LOL")
+
 		})
 
 		c.Visit("https://horriblesubs.info/current-season/")
-		c.Wait()
-		close(ch)
 
 	}()
 
-	shows := []Show{}
+	return ch
+}
 
-	for show := range ch {
-		fmt.Println(show.Title)
-		shows = append(shows, show)
+func currentSeasonDetails(urls <-chan string) <-chan Show {
+	shows := make(chan Show)
 
-	}
+	go func() {
+		for u := range urls {
+			fmt.Println(u)
+			detailCollector := colly.NewCollector(colly.Async(true))
+
+			detailCollector.OnHTML(".site-content", func(e *colly.HTMLElement) {
+				title := e.ChildText(".entry-title")
+				url := e.Request.URL.String()
+				cover := e.ChildAttr("div.series-image img[src^='']", "src")
+				description := e.ChildText(".series-desc")[16:]
+				shows <- Show{Title: title,
+					URL:         url,
+					Cover:       cover,
+					Description: description,
+				}
+				fmt.Println(e.Request.URL.String())
+			})
+
+			detailCollector.Visit(u)
+		}
+	}()
 
 	return shows
 }
