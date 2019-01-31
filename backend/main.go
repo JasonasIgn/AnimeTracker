@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gocolly/colly"
+	"github.com/gocolly/colly/queue"
 )
 
 type Show struct {
@@ -18,9 +19,11 @@ type Show struct {
 	Description string
 }
 
+const mainSite = "https://horriblesubs.info"
+
 func main() {
 
-	//Handling redirections
+	//Handling END-POINTS
 	http.HandleFunc("/current-season/", currentSeason)
 	http.HandleFunc("/current-season/search/", currentSeasonSearch)
 
@@ -29,17 +32,9 @@ func main() {
 }
 
 func currentSeason(w http.ResponseWriter, r *http.Request) {
-	showURLS := getCurrentSeasonUrls()
-	shows := currentSeasonDetails(showURLS)
-	shows2 := []Show{}
+	shows := currentSeasonDetails(getCurrentSeasonUrls())
 
-	for show := range shows {
-		fmt.Println(show.Title)
-		shows2 = append(shows2, show)
-
-	}
-
-	fmt.Fprintf(w, toJSON(shows2))
+	fmt.Fprintf(w, toJSON(shows))
 }
 
 func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
@@ -53,10 +48,9 @@ func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
 
 		key := strings.ToLower(key[0])
 
-		showURLS := getCurrentSeasonUrls()
-		shows := currentSeasonDetails(showURLS)
+		shows := currentSeasonDetails(getCurrentSeasonUrls())
 		showsAfterQuery := []Show{}
-		for show := range shows {
+		for _, show := range shows {
 			title := strings.ToLower(show.Title)
 			if strings.Contains(title, key) {
 				showsAfterQuery = append(showsAfterQuery, show)
@@ -68,66 +62,57 @@ func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getCurrentSeasonUrls() chan string {
-	ch := make(chan string)
+func getCurrentSeasonUrls() []string {
+	showURLs := []string{}
 
-	go func() {
-		const mainSite = "https://horriblesubs.info"
+	c := colly.NewCollector(
+		colly.AllowedDomains("horriblesubs.info"),
+		colly.AllowURLRevisit(),
+		//colly.Async(true),
+	)
 
-		c := colly.NewCollector(
-			colly.AllowedDomains("horriblesubs.info"),
-			colly.AllowURLRevisit(),
-			colly.Async(true),
-		)
+	//For every ind-show html element I parse it's title and href
+	c.OnHTML(".ind-show", func(e *colly.HTMLElement) {
+		showURL := e.ChildAttr("a[href]", "href")
+		showURLs = append(showURLs, showURL)
+	})
 
-		//For every ind-show html element I parse it's title and href
-		c.OnHTML(".ind-show", func(e *colly.HTMLElement) {
-			showUrl := e.ChildAttr("a[href]", "href")
-			ch <- mainSite + showUrl
-		})
+	c.OnScraped(func(r *colly.Response) {
+		fmt.Println("Finished scraping.")
 
-		c.OnRequest(func(r *colly.Request) {
-			fmt.Println("Visiting", r.URL.String())
-		})
+	})
 
-		c.OnScraped(func(response *colly.Response) {
-			fmt.Println("LOL")
+	c.Visit("https://horriblesubs.info/current-season/")
 
-		})
-
-		c.Visit("https://horriblesubs.info/current-season/")
-
-	}()
-
-	return ch
+	return showURLs
 }
 
-func currentSeasonDetails(urls <-chan string) <-chan Show {
-	shows := make(chan Show)
+func currentSeasonDetails(urls []string) []Show {
+	var listOfShows = []Show{}
 
-	go func() {
-		for u := range urls {
-			fmt.Println(u)
-			detailCollector := colly.NewCollector(colly.Async(true))
+	detailCollector := colly.NewCollector()
 
-			detailCollector.OnHTML(".site-content", func(e *colly.HTMLElement) {
-				title := e.ChildText(".entry-title")
-				url := e.Request.URL.String()
-				cover := e.ChildAttr("div.series-image img[src^='']", "src")
-				description := e.ChildText(".series-desc")[16:]
-				shows <- Show{Title: title,
-					URL:         url,
-					Cover:       cover,
-					Description: description,
-				}
-				fmt.Println(e.Request.URL.String())
-			})
+	q, _ := queue.New(
+		20, //Consumer threads (STILL NEED TO WORK THIS OUT)
+		&queue.InMemoryQueueStorage{MaxSize: 10000}, //Size of queue
+	)
 
-			detailCollector.Visit(u)
-		}
-	}()
+	detailCollector.OnHTML(".site-content", func(e *colly.HTMLElement) {
+		temp := Show{}
+		temp.Title = e.ChildText(".entry-title")
+		temp.URL = e.Request.URL.String()
+		temp.Cover = e.ChildAttr("div.series-image img[src^='']", "src")
+		temp.Description = e.ChildText(".series-desc")[16:]
+		listOfShows = append(listOfShows, temp)
+	})
 
-	return shows
+	for _, showURL := range urls {
+		q.AddURL(mainSite + showURL)
+	}
+
+	q.Run(detailCollector)
+
+	return listOfShows
 }
 
 func toJSON(s []Show) string {
