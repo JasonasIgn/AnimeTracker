@@ -18,3 +18,8 @@ yarn start
 
 donwload here:
 https://yarnpkg.com/lang/en/docs/install/#windows-stable
+
+### Same for Node.js
+
+download here:
+https://nodejs.org/en/
