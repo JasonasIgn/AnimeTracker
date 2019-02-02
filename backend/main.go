@@ -29,9 +29,14 @@ func main() {
 
 	log.Println("Listening..")
 	log.Fatal(http.ListenAndServe(":1337", nil))
+
 }
 
 func currentSeason(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 	shows := currentSeasonDetails(getCurrentSeasonUrls())
 
 	fmt.Fprintf(w, toJSON(shows))
@@ -73,11 +78,15 @@ func getCurrentSeasonUrls() []string {
 
 	//For every ind-show html element I parse it's title and href
 	c.OnHTML(".ind-show", func(e *colly.HTMLElement) {
+
 		showURL := e.ChildAttr("a[href]", "href")
+
 		showURLs = append(showURLs, showURL)
+
 	})
 
 	c.OnScraped(func(r *colly.Response) {
+
 		fmt.Println("Finished scraping.")
 
 	})
@@ -99,10 +108,12 @@ func currentSeasonDetails(urls []string) []Show {
 
 	detailCollector.OnHTML(".site-content", func(e *colly.HTMLElement) {
 		temp := Show{}
+
 		temp.Title = e.ChildText(".entry-title")
 		temp.URL = e.Request.URL.String()
 		temp.Cover = e.ChildAttr("div.series-image img[src^='']", "src")
 		temp.Description = e.ChildText(".series-desc")[16:]
+
 		listOfShows = append(listOfShows, temp)
 	})
 
