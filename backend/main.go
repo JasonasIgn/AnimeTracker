@@ -103,7 +103,7 @@ func currentSeasonDetails(urls []string) []Show {
 	detailCollector := colly.NewCollector()
 
 	q, _ := queue.New(
-		20, //Consumer threads (STILL NEED TO WORK THIS OUT)
+		100, //Consumer threads (STILL NEED TO WORK THIS OUT)
 		&queue.InMemoryQueueStorage{MaxSize: 10000}, //Size of queue
 	)
 
