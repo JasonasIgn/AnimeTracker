@@ -1,40 +1,21 @@
 import React, { Component } from "react";
 import { SearchBar } from "../../molecules/SearchBar";
 
+import { request } from "../../../resources/utils/ApiService";
+
 export class LandingPage extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      fullList: [
-        "asda",
-        "aaaaa",
-        "bbbbb",
-        "cccc",
-        "dddd",
-        "kkkkk",
-        "qasda",
-        "aaqaaa",
-        "bbbbqb",
-        "cccqc",
-        "ddqdd",
-        "kqkkkk",
-        "as",
-        "asdae",
-        "aaaaea",
-        "bbbbeb",
-        "cccce",
-        "dddde",
-        "kkkkek",
-        "qasdea",
-        "aaqaeaa",
-        "bbbbeqb",
-        "cccqec",
-        "ddqded",
-        "kqkekkk",
-        "ase"
-      ],
+      fullList: [],
       filteredList: []
     };
+  }
+
+  componentDidMount() {
+    request("current-season/").then(res => {
+      console.log(res);
+    });
   }
 
   onSearchQueryChange = searchQuery => {
