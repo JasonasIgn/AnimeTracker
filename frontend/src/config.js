@@ -5,7 +5,7 @@ const config = {
     env: process.env.NODE_ENV || "development",
     isDev: process.env.NODE_ENV !== "production",
     isBrowser: typeof window !== "undefined",
-    apiUrl: "",
+    apiUrl: "http://localhost:1337",
     utils: {
       maxSuggestionsInList: 6
     }
