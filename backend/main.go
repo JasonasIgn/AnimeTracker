@@ -33,13 +33,14 @@ func main() {
 }
 
 func currentSeason(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	shows := currentSeasonDetails(getCurrentSeasonUrls())
-
-	fmt.Fprintf(w, toJSON(shows))
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		shows := currentSeasonDetails(getCurrentSeasonUrls())
+		fmt.Fprintf(w, toJSON(shows))
+	}
 }
 
 func currentSeasonSearch(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +103,7 @@ func currentSeasonDetails(urls []string) []Show {
 	detailCollector := colly.NewCollector()
 
 	q, _ := queue.New(
-		20, //Consumer threads (STILL NEED TO WORK THIS OUT)
+		100, //Consumer threads (STILL NEED TO WORK THIS OUT)
 		&queue.InMemoryQueueStorage{MaxSize: 10000}, //Size of queue
 	)
 
