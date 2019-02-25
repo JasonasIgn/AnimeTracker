@@ -10,7 +10,6 @@ const config = {
       maxSuggestionsInList: 6
     }
   },
-  test: {},
   development: {},
   production: {}
 };
