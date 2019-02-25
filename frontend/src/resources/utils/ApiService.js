@@ -5,5 +5,7 @@ export function request(path, type = "GET", data = null) {
   return fetch(apiPath, {
     method: type,
     data: data
+  }).then(res => {
+    return res.json();
   });
 }
