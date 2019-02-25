@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import { SearchBar } from "../../molecules/SearchBar";
-
 import { request } from "../../../resources/utils/ApiService";
 
 export class LandingPage extends Component {
@@ -14,7 +13,7 @@ export class LandingPage extends Component {
 
   componentDidMount() {
     request("current-season/").then(res => {
-      console.log(res);
+      this.setState({ fullList: res });
     });
   }
 
@@ -22,7 +21,7 @@ export class LandingPage extends Component {
     const regex = new RegExp(`${searchQuery}`, "i");
     this.setState({
       filteredList: searchQuery
-        ? this.state.fullList.sort().filter(v => regex.test(v))
+        ? this.state.fullList.sort().filter(v => regex.test(v.Title))
         : []
     });
   };
