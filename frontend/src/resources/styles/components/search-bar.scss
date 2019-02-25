@@ -27,9 +27,15 @@
       display: none;
     }
     li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       border-top: 1px solid lightgrey;
       cursor: pointer;
       padding: 5px 16px;
+      button {
+        height: 22px;
+      }
       &:hover {
         background-color: lightgray;
       }

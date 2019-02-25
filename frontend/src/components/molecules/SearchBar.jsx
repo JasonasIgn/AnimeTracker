@@ -18,7 +18,11 @@ export const SearchBar = ({ suggestions, onChange }) => (
     >
       {suggestions.map((element, index) => {
         if (index < config.utils.maxSuggestionsInList)
-          return <li key={index}>{element.Title}</li>;
+          return (
+            <li key={index}>
+              {element.Title} <button>Track</button>
+            </li>
+          );
       })}
     </ul>
   </div>
